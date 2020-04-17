@@ -3,35 +3,47 @@ package queue
 import (
 	"counter-queue/log"
 	"strconv"
-	"sync"
 	"time"
 )
 
 var durations = []int{1, 2, 4, 2, 3, 5, 2, 3, 1, 3}
 
-var wg sync.WaitGroup
+type customer struct {
+	id       int
+	duration int
+}
 
-func ProcessQueue(num int) {
+func ProcessQueue(numOfCounter int) {
 	log.Stdout("Started")
-	for i := 0; i < num; i++ {
-		wg.Add(1)
-		custNo := i + 1
-		go serveCustomer(custNo, durations[i])
+	jobs := make(chan customer, len(durations))
+	results := make(chan bool, len(durations))
 
+	for w := 1; w <= numOfCounter; w++ {
+		go worker(w, jobs, results)
 	}
 
-	wg.Wait()
+	for j := 0; j < len(durations); j++ {
+		jobs <- customer{id: j + 1, duration: durations[j]}
+	}
+	close(jobs)
+
+	for a := 1; a <= len(durations); a++ {
+		<-results
+	}
+
 	log.Stdout("All Done")
 }
 
-func serveCustomer(custNo int, duration int) {
-	defer wg.Done()
-	log.Stdout("Started serving customer", custNo)
+func worker(id int, jobs <-chan customer, results chan<- bool) {
+	for j := range jobs {
+		log.Stdout("Counter", id, "started serving customer", j.id)
 
-	dur := strconv.Itoa(duration)
-	fmtDur := dur + "s"
-	d, _ := time.ParseDuration(fmtDur)
-	time.Sleep(d)
-	
-	log.Stdout("Done serving customer", custNo)
+		dur := strconv.Itoa(j.duration)
+		fmtDur := dur + "s"
+		d, _ := time.ParseDuration(fmtDur)
+		time.Sleep(d)
+
+		log.Stdout("Counter", id, "done serving customer", j.id)
+		results <- true
+	}
 }
