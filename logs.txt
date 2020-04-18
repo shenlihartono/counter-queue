@@ -1,2 +1,0 @@
-2020/04/17 15:41:02 file.go:22: [hello bandung]
-2020/04/17 15:41:08 file.go:22: [hello bandung]
