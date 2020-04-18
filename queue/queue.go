@@ -2,7 +2,10 @@ package queue
 
 import (
 	"counter-queue/log"
+	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 	"time"
 )
 
@@ -22,15 +25,36 @@ func ProcessQueue(numOfCounter int) {
 		go worker(w, jobs, results)
 	}
 
+	var served int
+	terminate := make(chan bool, 1)
+
+loop:
 	for j := 0; j < len(durations); j++ {
-		jobs <- customer{id: j + 1, duration: durations[j]}
+		time.Sleep(time.Second) // To simulate customer walking from queue line to counter
+
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+		go func() {
+			<-c
+			terminate <- true
+		}()
+
+		select {
+		case <-terminate:
+			log.Stdout("closing time, waiting for counters to finish up")
+			break loop
+		default:
+			jobs <- customer{id: j + 1, duration: durations[j]}
+			served++
+		}
 	}
 	close(jobs)
 
-	for a := 1; a <= len(durations); a++ {
+	for a := 1; a <= served; a++ {
 		<-results
 	}
 
+	log.Stdout("total customer served", served)
 	log.Stdout("All Done")
 }
 
