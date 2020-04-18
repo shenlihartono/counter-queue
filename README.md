@@ -13,3 +13,8 @@ Based on above illustration, we are going to create an application following cer
 2. The queue consists of 10 people with different duration of service such as following:
 [1, 2, 4, 2, 3, 5, 2, 3, 1, 3] (for simulation purpose only, all durations are in second)
 3. When the application get terminated, please do the Closing Simulation for each counter.
+
+### Running with Docker
+
+1. docker build -t counter-queue .
+2. docker run -it --rm --name my-running-app counter-queue
